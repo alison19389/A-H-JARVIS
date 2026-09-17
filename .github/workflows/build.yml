@@ -1,24 +1,18 @@
-name: Build AH JARVIS APK
+name: Build AH-JARVIS APK
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Baixar arquivos
+      - name: Baixar projeto
         uses: actions/checkout@v4
-
-      - name: Extrair projeto
-        run: |
-          rm -rf app
-          mkdir -p app
-          unzip -q AH-JARVIS-Android.zip -d app
 
       - name: Configurar Java
         uses: actions/setup-java@v4
@@ -27,35 +21,21 @@ jobs:
           java-version: '17'
 
       - name: Configurar Android SDK
-        uses: android-actions/setup-android@v3
+        run: |
+          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
+          echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
 
-      - name: Encontrar projeto Gradle
+      - name: Encontrar projeto Android
+        run: |
+          echo "Arquivos do projeto:"
+          find . -maxdepth 4 -type f | sort
+
+      - name: Encontrar Gradle
         run: |
           echo "Procurando gradlew..."
-          find app -name gradlew -type f -print
+          find . -name gradlew -type f -print
 
       - name: Compilar APK
         run: |
-          GRADLEW=$(find app -name gradlew -type f | head -n 1)
-
-          if [ -z "$GRADLEW" ]; then
-            echo "ERRO: gradlew não encontrado dentro do projeto."
-            exit 1
-          fi
-
-          chmod +x "$GRADLEW"
-
-          PROJECT_DIR=$(dirname "$GRADLEW")
-          cd "$PROJECT_DIR"
-
-          ./gradlew assembleDebug --stacktrace
-
-      - name: Procurar APK
-        run: |
-          find app -type f -name "*.apk" -print
-
-      - name: Disponibilizar APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: AH-JARVIS-APK
-          path: app/**/*.apk
+          GRADLEW=$(find . -name gradlew -type f | head
